@@ -226,10 +226,18 @@ fn make_map(player: &mut Object) -> Map {
     map
 }
 
-fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
+fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object], fov_recompute: bool) {
+
+    if fov_recompute {
+        // recompute FOV if needed (the player or object moved)
+        let player = &objects[0];
+        tcod.fov
+            .compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
+    }
     // go through all tiles, and set their background color
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
+            
             let wall = game.map[x as usize][y as usize].block_sight;
             if wall {
                 tcod.con
@@ -299,7 +307,12 @@ fn main() {
 
     let con = Offscreen::new(MAP_WIDTH, MAP_HEIGHT);
 
-    let mut tcod = Tcod { root, con };
+    let mut tcod = Tcod {
+        root,
+        con: Offscreen::new(MAP_WIDTH, MAP_HEIGHT),
+        fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
+    };
+
 
     // create object representing the player
     let player = Object::new(0, 0, '@', WHITE);
@@ -314,18 +327,33 @@ fn main() {
         // generate map (at this point it's not drawn to the screen)
         map: make_map(&mut objects[0]),
     };
+    // Populate the FOV map with the generated map
+    for y in 0..MAP_HEIGHT {
+        for x in 0..MAP_WIDTH {
+            tcod.fov.set(
+                x,
+                y,
+                !game.map[x as usize][y as usize].block_sight,
+                !game.map[x as usize][y as usize].blocked,
+            )
+        }
+    }
+    // Force FOV to recompute first time through game loop
+    let mut previous_player_position = (-1, -1);
 
     while !tcod.root.window_closed() {
         // clear the screen of the previous frame
         tcod.con.clear();
 
         // render the screen
-        render_all(&mut tcod, &game, &objects);
+        let fov_recompute = previous_player_position != (objects[0].x, objects[0].y);
+        render_all(&mut tcod, &game, &objects, fov_recompute);
 
         tcod.root.flush();
 
         // handle keys and exit game if needed
         let player = &mut objects[0];
+        previous_player_position = (player.x, player.y);
         let exit = handle_keys(&mut tcod, &game, player);
         if exit {
             break;
