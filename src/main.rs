@@ -1,5 +1,4 @@
-// This file is generated automatically. Do not edit it directly.
-// See the Contributing section in README on how to make changes to it.
+
 use std::cmp;
 
 use rand::Rng;
@@ -59,6 +58,7 @@ struct Game {
 #[derive(Clone, Copy, Debug)]
 struct Tile {
     blocked: bool,
+    explored: bool,
     block_sight: bool,
 }
 
@@ -66,6 +66,7 @@ impl Tile {
     pub fn empty() -> Self {
         Tile {
             blocked: false,
+            explored: false,
             block_sight: false,
         }
     }
@@ -73,6 +74,7 @@ impl Tile {
     pub fn wall() -> Self {
         Tile {
             blocked: true,
+            explored: false,
             block_sight: true,
         }
     }
