@@ -5,6 +5,7 @@ use std::cmp;
 use rand::Rng;
 use tcod::colors::*;
 use tcod::console::*;
+use tcod::map::{FovAlgorithm, Map as FovMap};
 
 // actual size of the window
 const SCREEN_WIDTH: i32 = 80;
@@ -22,15 +23,30 @@ const MAX_ROOMS: i32 = 30;
 const LIMIT_FPS: i32 = 20; // 20 frames-per-second maximum
 
 const COLOR_DARK_WALL: Color = Color { r: 0, g: 0, b: 100 };
+const COLOR_LIGHT_WALL: Color = Color { r: 130, g: 110, b: 50 };
+
 const COLOR_DARK_GROUND: Color = Color {
     r: 50,
     g: 50,
     b: 150,
 };
 
+const COLOR_LIGHT_GROUND: Color = Color {
+    r: 200,
+    g: 180,
+    b: 50,
+};
+
+
+
+const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic;
+const FOV_LIGHT_WALLS: bool = true;
+const TORCH_RADIUS: i32 = 10;
+
 struct Tcod {
     root: Root,
     con: Offscreen,
+    fov: FovMap,
 }
 
 type Map = Vec<Vec<Tile>>;
