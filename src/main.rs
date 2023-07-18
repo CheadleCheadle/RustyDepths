@@ -237,21 +237,26 @@ fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object], fov_recompute: b
     // go through all tiles, and set their background color
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
-            
+            let visible = tcod.fov.is_in_fov(x, y);
             let wall = game.map[x as usize][y as usize].block_sight;
-            if wall {
-                tcod.con
-                    .set_char_background(x, y, COLOR_DARK_WALL, BackgroundFlag::Set);
-            } else {
-                tcod.con
-                    .set_char_background(x, y, COLOR_DARK_GROUND, BackgroundFlag::Set);
-            }
+            let color = match (visible, wall) {
+                // outside of field of view:
+                (false, true) => COLOR_DARK_WALL,
+                (false, false) => COLOR_DARK_GROUND,
+                (true, true) => COLOR_LIGHT_WALL,
+                (true, false) => COLOR_LIGHT_GROUND,
+            };
+            tcod.con
+                .set_char_background(x, y, color, BackgroundFlag::Set);
+
         }
     }
 
     // draw all objects in the list
     for object in objects {
-        object.draw(&mut tcod.con);
+        if tcod.fov.is_in_fov(object.x, object.y) {
+            object.draw(&mut tcod.con);
+        }
     }
 
     // blit the contents of "con" to the root console
