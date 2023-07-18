@@ -228,7 +228,7 @@ fn make_map(player: &mut Object) -> Map {
     map
 }
 
-fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object], fov_recompute: bool) {
+fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recompute: bool) {
 
     if fov_recompute {
         // recompute FOV if needed (the player or object moved)
@@ -248,8 +248,16 @@ fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object], fov_recompute: b
                 (true, true) => COLOR_LIGHT_WALL,
                 (true, false) => COLOR_LIGHT_GROUND,
             };
-            tcod.con
-                .set_char_background(x, y, color, BackgroundFlag::Set);
+            let explored = &mut game.map[x as usize][y as usize].explored;
+            if visible {
+                //if visible, explore
+                *explored = true;
+            }
+            if *explored {
+                // show explored tiles only (any visible tile is explored already)
+                tcod.con
+                    .set_char_background(x, y, color, BackgroundFlag::Set);
+            }
 
         }
     }
@@ -312,7 +320,6 @@ fn main() {
         .title("Rust/libtcod tutorial")
         .init();
 
-    let con = Offscreen::new(MAP_WIDTH, MAP_HEIGHT);
 
     let mut tcod = Tcod {
         root,
@@ -330,7 +337,7 @@ fn main() {
     // the list of objects with those two
     let mut objects = [player, npc];
 
-    let game = Game {
+    let mut game = Game {
         // generate map (at this point it's not drawn to the screen)
         map: make_map(&mut objects[0]),
     };
@@ -354,7 +361,7 @@ fn main() {
 
         // render the screen
         let fov_recompute = previous_player_position != (objects[0].x, objects[0].y);
-        render_all(&mut tcod, &game, &objects, fov_recompute);
+        render_all(&mut tcod, &mut game, &objects, fov_recompute);
 
         tcod.root.flush();
 
