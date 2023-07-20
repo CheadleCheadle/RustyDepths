@@ -2,6 +2,7 @@
 use std::cmp;
 
 use rand::Rng;
+use tcod::colors;
 use tcod::colors::*;
 use tcod::console::*;
 use tcod::map::{FovAlgorithm, Map as FovMap};
@@ -35,6 +36,8 @@ const COLOR_LIGHT_GROUND: Color = Color {
     g: 180,
     b: 50,
 };
+
+const MAX_ROOM_MONSTERS: i32 = 3;
 
 
 
@@ -308,6 +311,24 @@ fn handle_keys(tcod: &mut Tcod, game: &Game, player: &mut Object) -> bool {
     }
 
     false
+}
+
+fn place_objects(room: Rect, objects: &mut Vec<Object>) {
+    // choose random number of monsters
+    let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
+    for _ in 0..num_monsters {
+        // choose random spot for this monster
+        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
+        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
+
+        let mut monster = if rand::random::<f32>() < 0.8 { // 80% change of getting an orc
+            Object::new(x, y, 'o', colors::DESATURATED_GREEN)
+        } else {
+            Object::new(x, y, 'T', colors::DARKER_GREEN)
+        };
+
+        objects.push(monster);
+    }
 }
 
 fn main() {
