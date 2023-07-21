@@ -63,6 +63,7 @@ struct Tcod {
     fov: FovMap,
 }
 
+
 type Map = Vec<Vec<Tile>>;
 
 struct Game {
@@ -256,6 +257,8 @@ fn make_map(objects: &mut Vec<Object>) -> Map {
     map
 }
 
+
+
 fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recompute: bool) {
 
     if fov_recompute {
@@ -308,6 +311,9 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
         1.0,
     );
 }
+
+
+
 fn handle_keys(tcod: &mut Tcod, game: &Game, objects: &mut Vec<Object>) -> PlayerAction {
     use tcod::input::Key;
     use tcod::input::KeyCode::*;
@@ -354,6 +360,8 @@ fn handle_keys(tcod: &mut Tcod, game: &Game, objects: &mut Vec<Object>) -> Playe
     }
 }
 
+
+
 fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
     // choose random number of monsters
     let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
@@ -386,12 +394,14 @@ fn is_blocked(x: i32, y: i32, map: &Map, objects: &[Object]) -> bool {
         .any(|object| object.blocks && object.pos() == (x, y))
 }
 
+
 fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
     let (x, y) = objects[id].pos();
     if !is_blocked(x + dx, y + dy, map, objects) {
         objects[id].set_pos(x + dx, y + dy);
     }
 }
+
 
 fn player_move_or_attack(dx: i32, dy: i32, game: &Game, objects: &mut [Object]) {
     // the coordinates the player is moving to or attacking
@@ -416,6 +426,7 @@ fn player_move_or_attack(dx: i32, dy: i32, game: &Game, objects: &mut [Object]) 
 
 
 }
+
 
 fn main() {
     tcod::system::set_fps(LIMIT_FPS);
@@ -493,3 +504,5 @@ fn main() {
         }
     }
 }
+
+
