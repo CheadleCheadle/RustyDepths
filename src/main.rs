@@ -43,7 +43,6 @@ const MAX_ROOM_MONSTERS: i32 = 3;
 const PLAYER: usize = 0;
 
 
-
 const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic;
 const FOV_LIGHT_WALLS: bool = true;
 const TORCH_RADIUS: i32 = 10;
@@ -193,6 +192,32 @@ impl Object {
         ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
         
     }
+
+    pub fn take_damage(&mut self, damage: i32) {
+        // apply damage
+        if let Some(fighter) = self.fighter.as_mut() {
+            if damage > 0 {
+                fighter.hp -= damage;
+            }
+        }
+    }
+
+    pub fn attack(&mut self, target: &mut Object) {
+        // a simple formula for attack damage
+        let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
+        if damage > 0 {
+            println!(
+                "{} attacks {} for {} hit points.",
+                self.name, target.name, damage
+           );
+            target.take_damage(damage);
+        } else {
+            println!(
+                "{} attacks {} but it has no effect!",
+                self.name, target.name
+            );
+        }
+    }
 }
 
 fn create_room(room: Rect, map: &mut Map) {
@@ -253,8 +278,6 @@ fn make_map(objects: &mut Vec<Object>) -> Map {
                 // this is the first room, where the player starts at
                 objects[PLAYER].set_pos(new_x, new_y);
             } else {
-                fighter: None,
-                ai: None,
                 // all rooms after the first:
                 // connect it to the previous room with a tunnel
 
@@ -334,6 +357,8 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
         1.0,
         1.0,
     );
+
+    //show the player's stats
 }
 
 
@@ -439,6 +464,19 @@ fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects: &mu
     move_by(id, dx, dy, map, objects);
 }
 
+// Mutably borrow two seperate elements from the given slice
+// Panics when the indexes are equal or out of bounds
+fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut T, &mut T) {
+    assert!(first_index != second_index);
+    let split_at_index = cmp::max(first_index, second_index);
+    let (first_slice, second_slice) = items.split_at_mut(split_at_index);
+    if first_index < second_index {
+        (&mut first_slice[first_index], &mut second_slice[0])
+    } else {
+        (&mut second_slice[0], &mut first_slice[second_index])
+    }
+}
+
 
 fn ai_take_turn(monster_id: usize, tcod: &Tcod, game: &Game, objects: &mut [Object]) {
     // a basic monster takes its turn. If you can see it, it can see you
@@ -450,11 +488,8 @@ fn ai_take_turn(monster_id: usize, tcod: &Tcod, game: &Game, objects: &mut [Obje
             move_towards(monster_id, player_x, player_y, &game.map, objects);
         } else if objects[PLAYER].fighter.map_or(false, |f| f.hp > 0) {
             // close enough, attack if the player is still alive
-            let monster = &objects[monster_id];
-            println!(
-                "The attack of the {} bounces off your shiny metal armor!",
-                monster.name
-            );
+            let (monster, player) = mut_two(monster_id, PLAYER, objects);
+            monster.attack(player);
         }
     }
 }
@@ -489,10 +524,8 @@ fn player_move_or_attack(dx: i32, dy: i32, game: &Game, objects: &mut [Object]) 
 
     match target_id {
         Some(target_id) => {
-            println!(
-                "The {} laughs at yuour puny efforts to attack him",
-                objects[target_id].name
-            );
+            let (player, target) = mut_two(PLAYER, target_id, objects);
+            player.attack(target);
         }
         None => {
             move_by(PLAYER, dx, dy, &game.map, objects);
@@ -501,6 +534,7 @@ fn player_move_or_attack(dx: i32, dy: i32, game: &Game, objects: &mut [Object]) 
 
 
 }
+
 
 
 fn main() {
@@ -577,10 +611,9 @@ fn main() {
 
         // let monsters take their turn
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
-            for object in &objects {
-                // only if object is not player
-                if (object as *const _) != (&objects[PLAYER] as *const _) {
-                    println!("The {} growls!", object.name);
+            for id in 0..objects.len() {
+                if objects[id].ai.is_some() {
+                    ai_take_turn(id, &tcod, &game, &mut objects);
                 }
             }
         }
