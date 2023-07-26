@@ -8,7 +8,6 @@ use tcod::console::*;
 use tcod::map::{FovAlgorithm, Map as FovMap};
 use tcod::input::{self, Event, Key, Mouse};
 
-use PlayerAction::*;
 
 // actual size of the window
 const SCREEN_WIDTH: i32 = 80;
@@ -523,11 +522,32 @@ fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> 
 
 
 
-fn handle_keys(tcod: &mut Tcod, game: &Game, objects: &mut Vec<Object>) -> PlayerAction {
+fn player_move_or_attack(dx: i32, dy: i32, game: &mut Game, objects: &mut [Object]) {
+    // the coordinates the player is moving to/attacking
+    let x = objects[PLAYER].x + dx;
+    let y = objects[PLAYER].y + dy;
+
+    // try to find an attackable object there
+    let target_id = objects
+        .iter()
+        .position(|object| object.fighter.is_some() && object.pos() == (x, y));
+
+    // attack if target found, move otherwise
+    match target_id {
+        Some(target_id) => {
+            let (player, target) = mut_two(PLAYER, target_id, objects);
+            player.attack(target, game);
+        }
+        None => {
+            move_by(PLAYER, dx, dy, &game.map, objects);
+        }
+    }
+}
+
+fn handle_keys(tcod: &mut Tcod, game: &mut Game, objects: &mut Vec<Object>) -> PlayerAction {
     use tcod::input::KeyCode::*;
     use PlayerAction::*;
 
-    let key = tcod.root.wait_for_keypress(true);
     let player_alive = objects[PLAYER].alive;
     match (tcod.key, tcod.key.text(), player_alive) {
         (
@@ -673,29 +693,6 @@ fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
     }
 }
 
-fn player_move_or_attack(dx: i32, dy: i32, game: &mut Game, objects: &mut [Object]) {
-    // the coordinates the player is moving to/attacking
-    let x = objects[PLAYER].x + dx;
-    let y = objects[PLAYER].y + dy;
-
-    // try to find an attackable object there
-    let target_id = objects
-        .iter()
-        .position(|object| object.fighter.is_some() && object.pos() == (x, y));
-
-    // attack if target found, move otherwise
-    match target_id {
-        Some(target_id) => {
-            let (player, target) = mut_two(PLAYER, target_id, objects);
-            player.attack(target, game);
-        }
-        None => {
-            move_by(PLAYER, dx, dy, &game.map, objects);
-        }
-    }
-}
-
-
 fn render_bar(
     panel: &mut Offscreen,
     x: i32,
@@ -817,7 +814,7 @@ fn main() {
         let player = &mut objects[0];
         previous_player_position = objects[PLAYER].pos();
 
-        let player_action = handle_keys(&mut tcod, &game, &mut objects);
+        let player_action = handle_keys(&mut tcod, &mut game, &mut objects);
         if player_action == PlayerAction::Exit {
             break;
         }
