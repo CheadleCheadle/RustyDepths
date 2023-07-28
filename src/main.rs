@@ -69,7 +69,7 @@ struct Fighter {
     power: i32,
     on_death: DeathCallback,
 }
-
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Item {
     Heal,
 }
@@ -314,6 +314,24 @@ impl Object {
                     WHITE,
             );
         }
+    }
+}
+// add to the player's inventory and remove from the map
+fn pick_item_up(object_id: usize, game: &mut Game, objects: &mut Vec<Object>) {
+    if game.inventory.len() >=  15{
+        game.messages.add(
+            format!(
+                "Your inventory is full, cannt pick up {}.",
+                objects[object_id].name
+
+                ),
+                RED,
+                );
+    } else {
+        let item = objects.swap_remove(object_id);
+        game.messages
+            .add(format!("Picked up {}!", item.name), GREEN);
+        game.inventory.push(item);
     }
 }
 
