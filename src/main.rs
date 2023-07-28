@@ -239,6 +239,7 @@ struct Object {
     alive: bool,
     fighter: Option<Fighter>,
     ai: Option<Ai>,
+    item: Option<Item>,
 }
 
 impl Object {
@@ -253,6 +254,7 @@ impl Object {
             alive: false,
             fighter: None,
             ai: None,
+            item: None,
         }
     }
 
@@ -318,7 +320,7 @@ impl Object {
 }
 // add to the player's inventory and remove from the map
 fn pick_item_up(object_id: usize, game: &mut Game, objects: &mut Vec<Object>) {
-    if game.inventory.len() >=  15{
+    if game.inventory.len() >=  26 {
         game.messages.add(
             format!(
                 "Your inventory is full, cannt pick up {}.",
@@ -607,6 +609,16 @@ fn handle_keys(tcod: &mut Tcod, game: &mut Game, objects: &mut Vec<Object>) -> P
             player_move_or_attack(1, 0, game, objects);
             TookTurn
         }
+        (Key { code: Text, .. }, "g", true) => {
+            // pick up item
+            let item_id = objects
+                .iter()
+                .position(|object| object.pos() == objects[PLAYER].pos() && object.item.is_some());
+            if let Some(item_id) = item_id {
+                pick_item_up(item_id, game, objects);
+            }
+            DidntTakeTurn
+        }
 
         _ => DidntTakeTurn,
     }
@@ -665,6 +677,7 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
         if !is_blocked(x, y, map, objects) {
             // create a healing potion
             let mut potion = Object::new(x, y, '!', "healing potion", VIOLET, false);
+            potion.item = Some(Item::Heal);
             objects.push(potion);
         }
     }
