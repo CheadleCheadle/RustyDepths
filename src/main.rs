@@ -21,6 +21,7 @@ const MAP_HEIGHT: i32 = 43;
 const ROOM_MAX_SIZE: i32 = 10;
 const ROOM_MIN_SIZE: i32 = 6;
 const MAX_ROOMS: i32 = 30;
+const MAX_ROOM_ITEMS: i32 = 2;
 
 // sizes and coordinates relevant for the GUI
 const BAR_WIDTH: i32 = 20;
@@ -67,6 +68,10 @@ struct Fighter {
     defense: i32,
     power: i32,
     on_death: DeathCallback,
+}
+
+enum Item {
+    Heal,
 }
 
 struct Messages {
@@ -158,6 +163,7 @@ type Map = Vec<Vec<Tile>>;
 struct Game {
     map: Map,
     messages: Messages,
+    inventory: Vec<Object>,
 }
 
 /// A tile of the map and its properties
@@ -628,6 +634,23 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
         }
 
     }
+
+    // choose random number of items
+    let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+
+    for _ in 0..num_items {
+        // choose random spot for this item
+        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
+        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
+
+        // only place if tile isn't blocked
+        if !is_blocked(x, y, map, objects) {
+            // create a healing potion
+            let mut potion = Object::new(x, y, '!', "healing potion", VIOLET, false);
+            objects.push(potion);
+        }
+    }
+
 }
 
 
@@ -773,6 +796,7 @@ fn main() {
         // generate map (at this point it's not drawn to the screen)
         map: make_map(&mut objects),
         messages: Messages::new(),
+        inventory: vec![],
     };
 
     game.messages.add(
