@@ -5,11 +5,12 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[dependencies]
+tcod = { git = "https://github.com/tomassedovic/tcod-rs.git", features = ["serialization"] }
+rand = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [dependencies.tcod-sys]
-version = "*"
+git = "https://github.com/tomassedovic/tcod-rs.git"
 features = ["dynlib"]
-
-[dependencies]
-tcod = "0.15"
-rand = "0.3.9"
